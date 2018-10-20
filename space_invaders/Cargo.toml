@@ -1,0 +1,6 @@
+[package]
+name = "space_invaders"
+version = "0.1.0"
+authors = ["Vinicius Milani <vmrfreitas@inf.ufrgs.br>, Lucas Klein, Giovani Massiero"]
+
+[dependencies]
