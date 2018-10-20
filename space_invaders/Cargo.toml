@@ -1,6 +1,8 @@
 [package]
 name = "space_invaders"
 version = "0.1.0"
-authors = ["Vinicius Milani <vmrfreitas@inf.ufrgs.br>, Lucas Klein, Giovani Massiero"]
+authors = ["Vinicius Milani <vmrfreitas@inf.ufrgs.br>, Lucas Klein <lkdraghetti@inf.ufrgs.br>, Giovani Massiero"]
 
 [dependencies]
+ggez = "0.4"
+rand = "0.4"
