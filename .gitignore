@@ -1,2 +1,2 @@
-./space_invaders/target/
-./space_invaders/Cargo.lock
+space_invaders/target/
+space_invaders/Cargo.lock
