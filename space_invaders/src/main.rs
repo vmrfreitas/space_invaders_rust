@@ -79,9 +79,34 @@ impl GameObj {
 
     fn update_position(&mut self, dt: f32){
 
-        self.pos += self.direction * self.speed * dt 
+        self.pos += self.direction * self.speed * dt;
     }
 
+}
+
+fn enemy_pos_calculator(enemies: &mut Vec<GameObj>, sx: f32){
+    
+    let screen_bounds = sx / 2.0 - GAME_BOUNDS;
+    let mut reached_corner = false;
+
+    let enemy_speed = ENEMY_SPEED/(enemies.len() as f32); 
+
+    for mut enemy in enemies{
+        enemy.speed = enemy_speed;
+        if enemy.pos.x > screen_bounds{
+            reached_corner = true;
+        }
+        else if enemy.pos.x < -screen_bounds{
+            reached_corner = true;
+        }
+    }
+
+    if reached_corner{
+        for mut enemy in enemies{
+            enemy.pos.y -= 30.0;
+            enemy.direction = Vector2::new(-enemy.direction.x, 0.0);
+        }
+    }
 }
 
 fn player_handle_input(player: &mut GameObj, input: &InputState) {
@@ -89,27 +114,51 @@ fn player_handle_input(player: &mut GameObj, input: &InputState) {
 }
 
 
-fn create_enemies(num: i32) -> Vec<GameObj> {
+fn create_enemies(screen_width: u32, screen_height: u32) -> Vec<GameObj> {
     let mut vec = Vec::new();
-    let mut enemy = GameObj::new(GameObjType::Enemy, 
-        Point2::new(200.0, 80.0), 
-        ENEMY_SPEED, 
-        na::zero(), 
-        ENEMY_SIZE, 
-        ENEMY_HP);
-    vec.push(enemy);
+
+    let spacing = ((screen_width as f32) - 40.0*2.0)/(ENEMY_NCOLUMN as f32);
+    let initial_x_pos = 40.0 - (screen_width as f32/2.0) + spacing/2.0;
+    let mut x_pos = initial_x_pos;
+    let mut y_pos = 250.0;
+
+
+    for j in 0..ENEMY_NLINE {
+        x_pos = initial_x_pos;
+        for i in 0..ENEMY_NCOLUMN {
+            let mut enemy = GameObj::new(GameObjType::Enemy, 
+                Point2::new(x_pos, y_pos), 
+                ENEMY_SPEED, 
+                Vector2::new(1.0, 0.0),
+                ENEMY_SIZE, 
+                ENEMY_HP);
+            vec.push(enemy);
+            x_pos += spacing; 
+        }
+        y_pos -= spacing;
+    }
     return vec;
 }
 
-fn create_barriers(num: i32) -> Vec<GameObj> {
+fn create_barriers(screen_width: u32, screen_height: u32) -> Vec<GameObj> {
     let mut vec = Vec::new();
-    let mut barrier = GameObj::new(GameObjType::Barrier, 
-        Point2::new(50.0, 200.0), 
-        0.0, 
-        na::zero(), 
-        BARRIER_SIZE, 
-        BARRIER_HP);
-    vec.push(barrier);
+
+    let spacing = ((screen_width as f32) - 60.0*2.0)/4.0;
+    let mut x_pos = 60.0 - (screen_width as f32/2.0)  + spacing/2.0;
+    let y_pos = -200.0;
+
+
+    for i in 0..4 {
+        let mut enemy = GameObj::new(GameObjType::Barrier, 
+            Point2::new(x_pos, y_pos), 
+            0.0, 
+            na::zero(), 
+            BARRIER_SIZE, 
+            BARRIER_HP);
+        vec.push(enemy);
+        x_pos += spacing; 
+    }
+ 
     return vec;
 }
 
@@ -180,12 +229,16 @@ const ENEMY_SIZE: f32 = 12.0;
 const BARRIER_SIZE: f32 = 12.0;
 const SHOT_SIZE: f32 = 6.0;
 
-const PLAYER_SPEED: f32 = 50.0;
-const ENEMY_SPEED: f32 = 10.0;
-const SHOT_SPEED: f32 = 80.0;
+const PLAYER_SPEED: f32 = 300.0;
+const ENEMY_SPEED: f32 = 1000.0;
+const SHOT_SPEED: f32 = 300.0;
+const PLAYER_STARTING_POS_Y: f32 = -290.0;
 
 const PLAYER_SHOT_TIME: f32 = 0.5;
 const ENEMY_SHOT_TIME: f32 = 0.5;
+const ENEMY_NLINE: i32 = 5;
+const ENEMY_NCOLUMN: i32 = 11;
+const GAME_BOUNDS: f32 = 30.0;
 
 struct MainState {
     player: GameObj,
@@ -218,15 +271,15 @@ impl MainState {
         let score_disp = graphics::Text::new(ctx, "score", &assets.font)?;
         let level_disp = graphics::Text::new(ctx, "level", &assets.font)?;
 
-        let mut player = GameObj::new(GameObjType::Player, 
-            Point2::origin(), 
+        let mut player = GameObj::new(GameObjType::Player,
+            Point2::new(0.0, PLAYER_STARTING_POS_Y), 
             PLAYER_SPEED, 
             na::zero(), 
             PLAYER_SIZE, 
             PLAYER_HP);
         
-        let enemies = create_enemies(1);
-        let barriers = create_barriers(1);
+        let enemies = create_enemies(ctx.conf.window_mode.width, ctx.conf.window_mode.height);
+        let barriers = create_barriers(ctx.conf.window_mode.width, ctx.conf.window_mode.height);
 
         let s = MainState {
             player,
@@ -388,8 +441,10 @@ impl MainState {
         if self.enemies.is_empty() {
             self.level += 1;
             self.gui_dirty = true;
-            let new_enemies = create_enemies(1);
+            let new_enemies = create_enemies(self.screen_width, self.screen_height);
+            let new_barriers = create_barriers(self.screen_width, self.screen_height);
             self.enemies.extend(new_enemies);
+            self.barriers = new_barriers;
         }
     }
 
@@ -423,6 +478,28 @@ fn draw_game_obj(
 }
 
 
+fn check_player_bounds(player: &mut GameObj, sx: f32) {
+
+    let screen_bounds = sx / 2.0 - GAME_BOUNDS;
+    
+    if player.pos.x > screen_bounds {
+        player.pos.x = screen_bounds;
+    } else if player.pos.x < -screen_bounds {
+        player.pos.x = -screen_bounds;
+    }
+}
+
+fn check_shot_bounds(shot: &mut GameObj, sy: f32) {
+
+    let screen_bounds = sy / 2.0;
+    
+    if shot.pos.y > screen_bounds {
+        shot.hit_points = 0;
+    } else if shot.pos.y < -screen_bounds {
+        shot.hit_points = 0;
+    }
+}
+
 fn world_to_screen_coords(screen_width: u32, screen_height: u32, point: Point2) -> Point2 {
     let width = screen_width as f32;
     let height = screen_height as f32;
@@ -433,7 +510,7 @@ fn world_to_screen_coords(screen_width: u32, screen_height: u32, point: Point2) 
 
 impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        const DESIRED_FPS: u32 = 60;
+        const DESIRED_FPS: u32 = 30;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
             let seconds = 1.0 / (DESIRED_FPS as f32);
@@ -448,6 +525,7 @@ impl EventHandler for MainState {
             // Update the physics for all actors.
             // First the player...
             self.player.update_position(seconds);
+            check_player_bounds(&mut self.player, self.screen_width as f32);
            
             // wrap_actor_position(
             //     &mut self.player,
@@ -456,8 +534,9 @@ impl EventHandler for MainState {
             // );
 
             // Then the shots...
-            for shot_player in &mut self.shots_player {
+            for mut shot_player in &mut self.shots_player {
                 shot_player.update_position(seconds);
+                check_shot_bounds(&mut shot_player, self.screen_height as f32);
                 //wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
             }
 
@@ -468,7 +547,10 @@ impl EventHandler for MainState {
             }
 
             // And finally the rocks.
+            enemy_pos_calculator(&mut self.enemies, self.screen_width as f32);
+
             for enemy in &mut self.enemies {
+
                 enemy.update_position(seconds);
                 //wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
             }
@@ -588,7 +670,7 @@ fn main(){
 
     let mut cb = ContextBuilder::new("space_invaders", "ggez")
         .window_setup(conf::WindowSetup::default().title("Best Space Invaders Ever"))
-        .window_mode(conf::WindowMode::default().dimensions(640, 480));
+        .window_mode(conf::WindowMode::default().dimensions(480, 640));
 
     // We add the CARGO_MANIFEST_DIR/resources to the filesystems paths so
     // we we look in the cargo project for files.
