@@ -177,7 +177,8 @@ struct Assets { // Classe que possui todos os assets necessários para o jogo
     shot_image: graphics::Image,
     font: graphics::Font,
     shot_sound: audio::Source,
-    hit_sound: audio::Source,
+    player_hit_sound: audio::Source,
+    enemy_hit_sound: audio::Source,
 }
 
 impl Assets { // Implementação dos métodos da classe de assets
@@ -194,8 +195,9 @@ impl Assets { // Implementação dos métodos da classe de assets
         let shot_image = graphics::Image::new(ctx, "/shot.png")?;
         let font = graphics::Font::new(ctx, "/slkscr.ttf", 12)?;
 
-        let shot_sound = audio::Source::new(ctx, "/pew.ogg")?;
-        let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
+        let shot_sound = audio::Source::new(ctx, "/shoot.ogg")?;
+        let player_hit_sound = audio::Source::new(ctx, "/explosion.ogg")?;
+        let enemy_hit_sound = audio::Source::new(ctx, "/invaderkilled.ogg")?;
         Ok(Assets {
             player_image,
             enemy_image_1,
@@ -209,7 +211,8 @@ impl Assets { // Implementação dos métodos da classe de assets
             shot_image,
             font,
             shot_sound,
-            hit_sound,
+            player_hit_sound,
+            enemy_hit_sound,
         })
     }
 
@@ -419,7 +422,7 @@ impl MainState {
                     enemy.hit_points = 0;
                     self.score += 1;
                     self.gui_dirty = true;
-                    let _ = self.assets.hit_sound.play();
+                    let _ = self.assets.enemy_hit_sound.play();
                 }
             }
 
@@ -429,7 +432,6 @@ impl MainState {
                     shot_player.hit_points = 0;
                     barrier.hit_points -= 1; 
                     barrier.curr_sprite += 1; // Atualiza o sprite da barreira para um mais "destruído"
-                    let _ = self.assets.hit_sound.play();
                 }
             }
 
@@ -438,7 +440,6 @@ impl MainState {
                 if distance.norm() < (shot_player.size + shot_enemy.size) {
                     shot_player.hit_points = 0;
                     shot_enemy.hit_points = 0;
-                    let _ = self.assets.hit_sound.play();
                 }
 
             } 
@@ -450,6 +451,7 @@ impl MainState {
                 self.player.hit_points -= 1;
                 self.gui_dirty = true;
                 shot_enemy.hit_points = 0;
+                let _ = self.assets.player_hit_sound.play();
             }
 
             for barrier in &mut self.barriers {
@@ -458,7 +460,6 @@ impl MainState {
                     shot_enemy.hit_points = 0;
                     barrier.hit_points -= 1;
                     barrier.curr_sprite += 1;
-                    let _ = self.assets.hit_sound.play();
                 }
             }
         }
@@ -474,7 +475,6 @@ impl MainState {
                 let distance = barrier.pos - enemy.pos; // Inimigo com a barreira
                 if distance.norm() < (enemy.size + barrier.size) {
                     barrier.hit_points = 0; // Simplesmente destrói a barreira
-                    let _ = self.assets.hit_sound.play();
                 }
             }
         }
