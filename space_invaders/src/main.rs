@@ -13,6 +13,7 @@ use ggez::graphics::{Point2, Vector2};
 use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, ContextBuilder, GameResult};
+use rand::Rng;
 
 use std::env;
 use std::path;
@@ -84,29 +85,26 @@ impl GameObj {
 
 }
 
-fn enemy_pos_calculator(enemies: &mut Vec<GameObj>, sx: f32){
-    
-    let screen_bounds = sx / 2.0 - GAME_BOUNDS;
-    let mut reached_corner = false;
+fn enemy_pos_calculator(enemy: &mut GameObj, 
+    player: &mut GameObj, 
+    reached_corner: bool, 
+    screen_bounds_x: f32, 
+    screen_bounds_y: f32) -> bool{
 
-    let enemy_speed = ENEMY_SPEED/(enemies.len() as f32); 
+    let mut reached_corner_1 = reached_corner;
 
-    for mut enemy in enemies{
-        enemy.speed = enemy_speed;
-        if enemy.pos.x > screen_bounds{
-            reached_corner = true;
-        }
-        else if enemy.pos.x < -screen_bounds{
-            reached_corner = true;
-        }
+    if enemy.pos.x > screen_bounds_x{
+        reached_corner_1 = true;
+    }
+    else if enemy.pos.x < -screen_bounds_x{
+        reached_corner_1 = true;  
     }
 
-    if reached_corner{
-        for mut enemy in enemies{
-            enemy.pos.y -= 30.0;
-            enemy.direction = Vector2::new(-enemy.direction.x, 0.0);
-        }
+    if enemy.pos.y < -screen_bounds_y{
+        player.hit_points = 0;
     }
+
+    return reached_corner_1;
 }
 
 fn player_handle_input(player: &mut GameObj, input: &InputState) {
@@ -165,7 +163,10 @@ fn create_barriers(screen_width: u32, screen_height: u32) -> Vec<GameObj> {
 
 struct Assets {
     player_image: graphics::Image,
-    enemy_image: graphics::Image,
+    enemy_image_1: graphics::Image,
+    enemy_image_2: graphics::Image,
+    enemy_image_3: graphics::Image,
+    enemy_image_4: graphics::Image,
     barrier_image: graphics::Image,
     shot_image: graphics::Image,
     font: graphics::Font,
@@ -176,7 +177,10 @@ struct Assets {
 impl Assets {
     fn new(ctx: &mut Context) -> GameResult<Assets> {
         let player_image = graphics::Image::new(ctx, "/player.png")?;
-        let enemy_image = graphics::Image::new(ctx, "/enemy.png")?;
+        let enemy_image_1 = graphics::Image::new(ctx, "/enemy1.png")?;
+        let enemy_image_2 = graphics::Image::new(ctx, "/enemy2.png")?;
+        let enemy_image_3 = graphics::Image::new(ctx, "/enemy3.png")?;
+        let enemy_image_4 = graphics::Image::new(ctx, "/enemy4.png")?;
         let barrier_image = graphics::Image::new(ctx, "/barrier.png")?;
         let shot_image = graphics::Image::new(ctx, "/shot.png")?;
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 18)?;
@@ -185,7 +189,10 @@ impl Assets {
         let hit_sound = audio::Source::new(ctx, "/boom.ogg")?;
         Ok(Assets {
             player_image,
-            enemy_image,
+            enemy_image_1,
+            enemy_image_2,
+            enemy_image_3,
+            enemy_image_4,
             barrier_image,
             shot_image,
             font,
@@ -197,7 +204,7 @@ impl Assets {
     fn game_obj_image(&mut self, game_obj: &GameObj) -> &mut graphics::Image {
         match game_obj.tag {
             GameObjType::Player => &mut self.player_image,
-            GameObjType::Enemy => &mut self.enemy_image,
+            GameObjType::Enemy => &mut self.enemy_image_1,
             GameObjType::Barrier => &mut self.barrier_image,
             GameObjType::Shot => &mut self.shot_image,
         }
@@ -225,17 +232,17 @@ const BARRIER_HP: i32 = 4;
 const SHOT_HP: i32 = 1;
 
 const PLAYER_SIZE: f32 = 12.0;
-const ENEMY_SIZE: f32 = 12.0;
+const ENEMY_SIZE: f32 = 6.0;
 const BARRIER_SIZE: f32 = 12.0;
 const SHOT_SIZE: f32 = 6.0;
 
 const PLAYER_SPEED: f32 = 300.0;
-const ENEMY_SPEED: f32 = 1000.0;
+const ENEMY_SPEED: f32 = 600.0;
 const SHOT_SPEED: f32 = 300.0;
 const PLAYER_STARTING_POS_Y: f32 = -290.0;
 
 const PLAYER_SHOT_TIME: f32 = 0.5;
-const ENEMY_SHOT_TIME: f32 = 0.5;
+const ENEMY_SHOT_TIME: f32 = 1.0;
 const ENEMY_NLINE: i32 = 5;
 const ENEMY_NCOLUMN: i32 = 11;
 const GAME_BOUNDS: f32 = 30.0;
@@ -253,6 +260,7 @@ struct MainState {
     screen_height: u32,
     input: InputState,
     player_shot_timeout: f32,
+    enemy_shot_timeout: f32,
     gui_dirty: bool,
     score_display: graphics::Text,
     level_display: graphics::Text,
@@ -294,12 +302,30 @@ impl MainState {
             screen_height: ctx.conf.window_mode.height,
             input: InputState::default(),
             player_shot_timeout: 0.0,
+            enemy_shot_timeout: 0.0,
             gui_dirty: true,
             score_display: score_disp,
             level_display: level_disp,
         };
 
         Ok(s)
+    }
+
+    fn activate_enemy_shot(&mut self) {
+        self.enemy_shot_timeout = ENEMY_SHOT_TIME;
+
+
+        let enemy_shooter = (rand::thread_rng().gen_range(0, self.enemies.len() as i32)) as usize;
+
+        let mut shot = GameObj::new(GameObjType::Shot, 
+            self.enemies[enemy_shooter].pos+Vector2::new(0.0, -20.0), 
+            SHOT_SPEED, 
+            Vector2::new(0.0, -1.0), 
+            SHOT_SIZE, 
+            SHOT_HP);
+
+        self.shots_enemy.push(shot);
+        let _ = self.assets.shot_sound.play();
     }
 
     fn activate_player_shot(&mut self) {
@@ -521,6 +547,10 @@ impl EventHandler for MainState {
             if self.input.is_firing && self.player_shot_timeout < 0.0 {
                 self.activate_player_shot();
             }
+            self.enemy_shot_timeout -= seconds;
+            if self.enemy_shot_timeout < 0.0 {
+                self.activate_enemy_shot();
+            }
 
             // Update the physics for all actors.
             // First the player...
@@ -541,13 +571,34 @@ impl EventHandler for MainState {
             }
 
 
-            for shot_enemy in &mut self.shots_enemy {
+            for mut shot_enemy in &mut self.shots_enemy {
                 shot_enemy.update_position(seconds);
+                check_shot_bounds(&mut shot_enemy, self.screen_height as f32);
                 //wrap_actor_position(act, self.screen_width as f32, self.screen_height as f32);
             }
 
             // And finally the rocks.
-            enemy_pos_calculator(&mut self.enemies, self.screen_width as f32);
+
+            let screen_bounds_x = (self.screen_width as f32) / 2.0 - GAME_BOUNDS;
+            let screen_bounds_y = (self.screen_height as f32) / 2.0 - GAME_BOUNDS;
+            let mut reached_corner = false;
+            let enemy_speed = ENEMY_SPEED/(self.enemies.len() as f32); 
+
+            for mut enemy in &mut self.enemies{
+                enemy.speed = enemy_speed;
+                reached_corner = enemy_pos_calculator(enemy, 
+                                                    &mut self.player, 
+                                                    reached_corner, 
+                                                    screen_bounds_x, 
+                                                    screen_bounds_y);
+            }
+
+            if reached_corner{
+                for mut enemy in &mut self.enemies{
+                    enemy.pos.y -= 15.0;
+                    enemy.direction = Vector2::new(-enemy.direction.x, 0.0);
+                }
+            }
 
             for enemy in &mut self.enemies {
 
