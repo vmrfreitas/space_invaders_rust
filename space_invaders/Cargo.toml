@@ -1,7 +1,7 @@
 [package]
 name = "space_invaders"
 version = "0.1.0"
-authors = ["Vinicius Milani <vmrfreitas@inf.ufrgs.br>, Lucas Klein <lkdraghetti@inf.ufrgs.br>, Giovani Massiero"]
+authors = ["Vinicius Milani <vmrfreitas@inf.ufrgs.br>, Lucas Klein <lkdraghetti@inf.ufrgs.br>, Giovani Massiero <gmmalossi@inf.ufrgs.br>"]
 
 [dependencies]
 ggez = "0.4"
