@@ -38,6 +38,7 @@ const ENEMY_SHOT_TIME: f32 = 1.0;
 const ENEMY_NLINE: i32 = 5;
 const ENEMY_NCOLUMN: i32 = 11;
 const GAME_BOUNDS: f32 = 30.0;
+const MAX_DIFF_LEVEL: i32 = 7;
 
 
 // Valores possíveis assumidos pela struct "GameObj"
@@ -107,13 +108,13 @@ fn enemy_pos_calculator(enemy: &mut GameObj, // Atualiza a posição de um inimi
     return reached_corner_1;
 }
 
-fn create_enemies(screen_width: u32) -> Vec<GameObj> { // Cria os inimigos nas suas posições corretas
+fn create_enemies(screen_width: u32, diff_level: i32) -> Vec<GameObj> { // Cria os inimigos nas suas posições corretas
     let mut vec = Vec::new();
 
     let spacing = ((screen_width as f32) - 40.0*2.0)/(ENEMY_NCOLUMN as f32); // Espaço entre inimigos
     let initial_x_pos = 40.0 - (screen_width as f32/2.0) + spacing/2.0; 
     let mut x_pos;
-    let mut y_pos = 250.0;
+    let mut y_pos = 250.0 - (diff_level as f32) * 35.0;
     let mut enemy_type = 1;
 
 
@@ -286,7 +287,7 @@ impl MainState {
         println!("Bem vindo ao melhor Space Invaders da existência");
         println!();
         println!("Como jogar:");
-        println!("Setinhas para esquerda e direita, espaço para atirar, boa sorte");
+        println!("Setinhas para esquerda e direita, espaço para atirar, esc para sair, boa sorte");
         println!();
 
         let assets = Assets::new(ctx)?;
@@ -303,7 +304,7 @@ impl MainState {
             PLAYER_SIZE, 
             PLAYER_HP);
 
-        let enemies = create_enemies(ctx.conf.window_mode.width);
+        let enemies = create_enemies(ctx.conf.window_mode.width, 0);
         let barriers = create_barriers(ctx.conf.window_mode.width);
 
         let s = MainState {
@@ -344,7 +345,6 @@ impl MainState {
             SHOT_HP);
 
         self.shots_enemy.push(shot);
-        let _ = self.assets.shot_sound.play();
     }
 
     fn activate_player_shot(&mut self) { // Função que dispara um tiro do player
@@ -483,8 +483,13 @@ impl MainState {
     fn check_for_level_respawn(&mut self) { // Recarrega os inimigos e as barreiras caso o level passe
         if self.enemies.is_empty() {
             self.level += 1;
+            let mut diff_level = self.level;
             self.gui_dirty = true;
-            let new_enemies = create_enemies(self.screen_width);
+            if self.level > MAX_DIFF_LEVEL
+            {
+                diff_level = MAX_DIFF_LEVEL;  
+            }
+            let new_enemies = create_enemies(self.screen_width, diff_level);
             let new_barriers = create_barriers(self.screen_width);
             self.enemies.extend(new_enemies);
             self.barriers = new_barriers;
@@ -696,6 +701,7 @@ impl EventHandler for MainState { // Loop principal do jogo, onde tudo é atuali
             Keycode::Space => {
                 self.input.is_firing = true;
             }
+
             Keycode::Escape => ctx.quit().unwrap(),
             _ => (),
         }
