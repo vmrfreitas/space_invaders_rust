@@ -1,10 +1,8 @@
 use ggez::graphics;
-use ggez::graphics::{Point2, Vector2};
 use ggez::audio;
-use ggez::{Context, ContextBuilder, GameResult};
+use ggez::{Context, GameResult};
 
 use go;
-
 
 pub struct Assets { // Classe que possui todos os assets necessários para o jogo
     player_image: graphics::Image,

@@ -2,17 +2,16 @@ extern crate ggez;
 extern crate rand;
 
 
-use ggez::{Context, ContextBuilder, GameResult};
+use ggez::{Context, GameResult};
 use ggez::graphics::{Point2, Vector2};
 use ggez::graphics;
 use ggez::timer;
-use ggez::event::{self, EventHandler, Keycode, Mod};
+use ggez::event::{EventHandler, Keycode, Mod};
 use rand::Rng;
 
 use asse;
 use go;
-
-
+use go::Movement;
 
 const PLAYER_SHOT_TIME: f32 = 0.5;
 const ENEMY_SHOT_TIME: f32 = 1.0;
@@ -311,6 +310,7 @@ impl MainState {
 
     fn collisions(&mut self) { // Função que gerencia as colisões
         
+        
         for shot_player in &mut self.shots_player {
             for enemy in &mut self.enemies {
                 let distance = enemy.get_pos() - shot_player.get_pos(); // Tiro do player com inimigo
@@ -377,6 +377,7 @@ impl MainState {
                 }
             }
         }
+
     }
 
     fn check_for_level_respawn(&mut self) { // Recarrega os inimigos e as barreiras caso o level passe

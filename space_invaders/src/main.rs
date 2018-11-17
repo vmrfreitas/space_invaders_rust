@@ -4,64 +4,16 @@
 extern crate ggez;
 extern crate rand;
 
-use ggez::audio;
 use ggez::conf;
-use ggez::event::{self, EventHandler, Keycode, Mod};
-use ggez::graphics;
-use ggez::graphics::{Point2, Vector2};
-use ggez::nalgebra as na;
-use ggez::timer;
-use ggez::{Context, ContextBuilder, GameResult};
-use rand::Rng;
-
+use ggez::{ContextBuilder};
+use ggez::event;
 use std::env;
 use std::path;
 
 
-const PLAYER_HP: i32 = 3;
-const ENEMY_HP: i32 = 1;
-const BARRIER_HP: i32 = 4;
-const SHOT_HP: i32 = 1;
-
-const PLAYER_SIZE: f32 = 12.0;
-const ENEMY_SIZE: f32 = 6.0;
-const BARRIER_SIZE: f32 = 12.0;
-const SHOT_SIZE: f32 = 6.0;
-
-const PLAYER_SPEED: f32 = 300.0;
-const ENEMY_SPEED: f32 = 600.0;
-const SHOT_SPEED: f32 = 300.0;
-const PLAYER_STARTING_POS_Y: f32 = -290.0;
-
-const PLAYER_SHOT_TIME: f32 = 0.5;
-const ENEMY_SHOT_TIME: f32 = 1.0;
-const ENEMY_NLINE: i32 = 5;
-const ENEMY_NCOLUMN: i32 = 11;
-const GAME_BOUNDS: f32 = 30.0;
-const MAX_DIFF_LEVEL: i32 = 7;
-
-
-// aqui tava os gameobjects
-
-mod asse;
+mod asse; // carrega os modulos com as funções e classes
 mod ms;
 mod go;
-
-
-// aqui tavam os creates
-
-// AQUI TAVA OS ASSETS
-
-
-
-
-// aqui tava o mainstate
-
-
-
-
-// aqui tava o eventhandler
-
 
 fn main(){
 
@@ -72,9 +24,6 @@ fn main(){
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");
-        // We need this re-assignment alas, see
-        // https://aturon.github.io/ownership/builders.html
-        // under "Consuming builders"
         cb = cb.add_resource_path(path);
     } 
 

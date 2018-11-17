@@ -19,6 +19,89 @@ const PLAYER_STARTING_POS_Y: f32 = -290.0;
 use ggez::graphics::{Point2, Vector2};
 use ggez::nalgebra as na;
 
+impl Movement for GameObj {
+    fn update_position(&mut self, time_var: f32){ // Atualiza a posição do objeto de acordo com a velocidade e direção
+        self.pos += self.direction * self.speed * time_var;
+    }   
+
+    fn get_pos(&self) -> Point2{
+        return self.pos;
+    }
+
+    fn get_pos_x(&self) -> f32{
+        return self.pos.x;
+    }
+
+    fn get_pos_y(&self) -> f32{
+        return self.pos.y;
+    }
+
+    fn set_pos(&mut self, pos: Point2){
+        self.pos = pos;
+    }
+
+    fn set_pos_x(&mut self, pos: f32){
+        
+        self.pos.x = pos;
+    }
+
+    fn set_pos_y(&mut self, pos: f32){
+        self.pos.y = pos;
+    }
+
+    fn get_speed(&self) -> f32{
+        return self.speed;
+    }
+
+    fn set_speed(&mut self, speed: f32){
+        self.speed = speed;
+    }
+
+    fn get_direction(&self) ->  Vector2{
+        return self.direction;
+    }
+
+    fn get_direction_x(&self) -> f32{
+        return self.direction.x;
+    }
+
+    fn get_direction_y(&self) -> f32{
+        return self.direction.y;
+    }
+
+    fn set_direction(&mut self, dir: Vector2){
+        self.direction = dir;
+    }
+
+    fn set_direction_x(&mut self, dir: f32){
+        self.direction.x = dir;
+    }
+
+    fn set_direction_y(&mut self, dir: f32){
+        self.direction.y = dir;
+    }
+}
+
+
+pub trait Movement {
+    fn update_position(&mut self, time_var: f32);
+    fn get_pos(&self) -> Point2;
+    fn get_pos_x(&self) -> f32;
+    fn get_pos_y(&self) -> f32;
+    fn set_pos(&mut self, pos: Point2);
+    fn set_pos_x(&mut self, pos: f32);
+    fn set_pos_y(&mut self, pos: f32);
+    fn get_speed(&self) -> f32;
+    fn set_speed(&mut self, speed: f32);
+    fn get_direction(&self) ->  Vector2;
+    fn get_direction_x(&self) -> f32;
+    fn get_direction_y(&self) -> f32;
+    fn set_direction(&mut self, dir: Vector2);
+    fn set_direction_x(&mut self, dir: f32);
+    fn set_direction_y(&mut self, dir: f32);
+}
+
+
 // Valores possíveis assumidos pela struct "GameObj"
 
 #[derive(Debug)]
@@ -41,6 +124,7 @@ pub struct GameObj {
     size: f32,
     hit_points: i32,
 }
+
 
 // Implementação dos "métodos" da "classe" GameObj
 
@@ -96,10 +180,6 @@ impl GameObj {
             BARRIER_HP);
     }
 
-    pub fn update_position(&mut self, time_var: f32){ // Atualiza a posição do objeto de acordo com a velocidade e direção
-
-        self.pos += self.direction * self.speed * time_var;
-    }
 
     pub fn get_tag(&self) -> &GameObjType {
         return &self.tag;
@@ -109,63 +189,15 @@ impl GameObj {
     }
 
     pub fn set_curr_sprite(&mut self, curr_sprite: i32){
-        self.curr_sprite = curr_sprite;
-    }
-
-    pub fn get_pos(&self) -> Point2{
-        return self.pos;
-    }
-
-    pub fn get_pos_x(&self) -> f32{
-        return self.pos.x;
-    }
-
-    pub fn get_pos_y(&self) -> f32{
-        return self.pos.y;
-    }
-
-    pub fn set_pos(&mut self, pos: Point2){
-        self.pos = pos;
-    }
-
-    pub fn set_pos_x(&mut self, pos: f32){
-        self.pos.x = pos;
-    }
-
-    pub fn set_pos_y(&mut self, pos: f32){
-        self.pos.y = pos;
-    }
-
-    pub fn get_speed(&self) -> f32{
-        return self.speed;
-    }
-
-    pub fn set_speed(&mut self, speed: f32){
-        self.speed = speed;
-    }
-
-    pub fn get_direction(&self) ->  Vector2{
-        return self.direction;
-    }
-
-    pub fn get_direction_x(&self) -> f32{
-        return self.direction.x;
-    }
-
-    pub fn get_direction_y(&self) -> f32{
-        return self.direction.y;
-    }
-
-    pub fn set_direction(&mut self, dir: Vector2){
-        self.direction = dir;
-    }
-
-    pub fn set_direction_x(&mut self, dir: f32){
-        self.direction.x = dir;
-    }
-
-    pub fn set_direction_y(&mut self, dir: f32){
-        self.direction.y = dir;
+        if curr_sprite < -2 {
+            self.curr_sprite = -2;
+        }
+        else if curr_sprite>3 {
+            self.curr_sprite = 3;
+        }
+        else{
+            self.curr_sprite = curr_sprite;
+        }
     }
 
     pub fn get_size(&self) -> f32{
@@ -177,7 +209,15 @@ impl GameObj {
     }
 
     pub fn set_hit_points(&mut self, hp: i32){
-        self.hit_points = hp;
+        if hp < 0 {
+            self.hit_points = 0;
+        }
+        else if hp > 3 {
+            self.hit_points = 3;
+        }
+        else{
+            self.hit_points = hp;
+        }
     }
 
 
